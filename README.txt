@@ -1,4 +1,5 @@
-Run WebScrapping.py inside 'Scripts\WebScrapping.py' and follow the instructions.
+First, run Del_Reports.py inside 'Scripts' directory.
+Then, run WebScrapping.py inside 'Scripts' directory and follow the instructions.
 
 You can request the script to perform the following (three actions):
 
