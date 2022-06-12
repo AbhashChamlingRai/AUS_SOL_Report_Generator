@@ -13,11 +13,11 @@ If you want to see the project's default directory tree then, open 'aussol.py' i
 <b>FORMAT:
 $ ausso.py{space}{attributtes}</b>
                         |
-				        ---------> store (Refer to action no. 1)
-				        |
-			            ---------> reportALL (Refer to action no. 2)
-				        |
-				        ---------> reportIT (Refer to action no. 3)
+			---------> store (Refer to action no. 1)
+			|
+			---------> reportALL (Refer to action no. 2)
+			|
+			---------> reportIT (Refer to action no. 3)
 </pre>
 ## You can request the script to perform the following (three actions):
 
@@ -56,13 +56,16 @@ Running the above command will generate IT occupations report from Skilled Occup
 
 ### This script has two modes:
 	
-1. When internet connectivity is available:
+	1. When internet connectivity is available:
+	
 		All three above actions can be performed.
+		
 
-2. When there is no internet connection:
+	2. When there is no internet connection:
+	
 		Only the second and the third action can be performed.	
 
 
 ### If you want only the latest information:
 	
-        First, perform action no. 1 then, either of 2nd, 3rd or both action s(one after another).
+	First, perform action no. 1 then, either of 2nd, 3rd or both action s(one after another).
