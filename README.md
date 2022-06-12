@@ -21,13 +21,13 @@ $ ausso.py{space}{attributtes}</b>
 </pre>
 ## You can request the script to perform the following (three actions):
 
-### 1. ***(REQUIRES INTERNET)*** To store the latest copy of the Skilled Occupation List (SOL) of Australia in the script's database(Data/Records):
+#### 1. ***(REQUIRES INTERNET)*** To store the latest copy of the Skilled Occupation List (SOL) of Australia in the script's database(Data/Records):
 	
 > ***$ aussol.py store***
 
 &nbsp;&nbsp;&nbsp;&nbsp;
 After running above command the script automatically stores latest Skilled Occupation List of current date into its database only if there is an internet connection and current date's Skilled Occupation List entry is not stored in the database yet.
-### 2. ***(INTERNET NOT REQUIRED)*** To generate Skilled Occupation List report (all occupations) from the script's database:
+#### 2. ***(INTERNET NOT REQUIRED)*** To generate Skilled Occupation List report (all occupations) from the script's database:
 
 > ***$ aussol.py reportALL***
 
@@ -46,7 +46,7 @@ Depending on the information stored in the entered date's Skilled Occupation Lis
 * Both added as well as removed occupations with its total number and all the current occupations present in the latest Skilled Occupation List.
 </font>
 
-### 3. ***(INTERNET NOT REQUIRED)*** To generate latest Skilled Occupation List report (IT related occupations only) from the script's database:
+#### 3. ***(INTERNET NOT REQUIRED)*** To generate latest Skilled Occupation List report (IT related occupations only) from the script's database:
 
 > ***$ aussol.py reportIT***
 		
