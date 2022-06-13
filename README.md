@@ -6,7 +6,7 @@
 * Finally, run the command "aussol.py help" and follow the instructions.
 
 > **NOTE:**
-All scripts are inside 'Scripts' folder and the database directory of the script is **'Data/Records'**.\
+All scripts are inside **'Scripts'** folder and the database directory of the script is **'Data/Records'**.\
 If you want to see the project's default directory tree then, open 'aussol.py' in a code editor or IDE and scroll just below the import section.
 
 <pre>
