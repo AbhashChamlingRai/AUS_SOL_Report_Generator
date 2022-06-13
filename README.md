@@ -51,7 +51,7 @@ Depending on the information stored in the entered date's Skilled Occupation Lis
 > ***$ aussol.py reportIT***
 		
 &nbsp;&nbsp;&nbsp;&nbsp;
-Running the above command will generate IT occupations report from Skilled Occupation List of Australia and will be asked if user wants to recieve the information on the terminal or as a report file.
+Running the above command will generate IT occupations report from Skilled Occupation List of Australia and the script will ask whether user wants to recieve the report on the terminal or as a report file
 
 
 ### This script has two modes:
