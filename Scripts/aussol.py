@@ -17,6 +17,8 @@ from selenium.webdriver.chromium.options import ChromiumOptions
 from selenium.webdriver.common import options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 '''
                                      DEFAULT DIRECTORY STRUCTURE
@@ -54,6 +56,8 @@ class BetaBot:
 
     #This method opens the portable chrome browser and opens the provided link 'url'
     def StartBot(self):
+        print("\nBOT IS BEING ACTIVATED...")
+
         #getting full path of parent folder into 'ais' variable
         os.chdir(os.path.pardir)
         ais = os.getcwd()
@@ -164,12 +168,14 @@ class BetaBot:
         # options.add_argument('--disable-dev-shm-usage')
         # options.add_argument('--no-sandbox')
 
-        print("\nBOT IS BEING ACTIVATED...")
+        # enable browser logging
+        dlog = DesiredCapabilities.CHROME
+        dlog['goog:loggingPrefs'] = { 'browser':'ALL' } 
+
         #The follwing codes will run the portable chrome software and open 'https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list' automatically
-        self.driver = webdriver.Chrome(options=options)
-        self.driver.get(self.link)
-        time.sleep(1)
-    
+        self.driver = webdriver.Chrome(options=options, desired_capabilities=dlog)
+        self.driver.get(self.link)        
+
     #First 
     def Store_SOL(self):
         #The two lines of codes below are used to find how many times our script has to perform an action similar to performing a left mouse click on button inside the website
@@ -178,7 +184,7 @@ class BetaBot:
         
         #Below 2 lines of codes are for initiating a loading status percentage bar
         widgets = ['RETRIEVING DATA: ', progressbar.Bar('=', '[', ']', '-'), progressbar.Percentage()]
-        bar = progressbar.ProgressBar(max_value=no_of_cliks_to_perform+1,widgets=widgets).start() 
+        bar = progressbar.ProgressBar(max_value=no_of_cliks_to_perform+1,widgets=widgets,redirect_stdout=True).start() 
 
 
         #For finding titles which will be stored as list in 'headings'
@@ -255,13 +261,39 @@ class BetaBot:
                 #Initializing 'twenty' variable as an empty list for storing data of the another webpage which will be opened after running the below codes.
                 twenty = []
 
-                if i != no_of_cliks_to_perform:
+                # if i == 0: #if first page
+                #     #Now, we wait for a maximum of 20 seconds until the button 'Next' appears on the webpage.
+                #     #Not doing this will result in inconsistent data being gather.
+                #     el = WebDriverWait(self.driver, timeout=20).until(lambda d: d.find_element(By.PARTIAL_LINK_TEXT, "Next")) #This will provide a reference to the button we need to click
+                #     #clicking the button now
+                #     ActionChains(self.driver).click(el).perform()
+                #     bar.update(i+1)
+
+                # elif i !=0 and i != no_of_cliks_to_perform: #if second page to the last page
+                #     el = WebDriverWait(self.driver, timeout=20).until(lambda d: d.find_element(By.PARTIAL_LINK_TEXT, "Next")) #This will provide a reference to the button we need to click
+                #     ActionChains(self.driver).click(el).perform()
+
+                #     '''--VERY IMPORTANT--'''
+                #     #Now we make the script wait again until the chrome browser's console gives desired message as the last and the most recent log message
+                #     #which is "hide blockui spinner...". When this log message is thrown to the console by the website, the websites fully loads the next page
+                #     #Not doing this will result in inconsistent data being gather.
+                #     while True: # looping until condition is fulfilled; new wait operation
+                #         logg = self.driver.get_log('browser') #getting chrome browser's console log into a list of dictonaries
+                #         if len(logg) == 0: #if browser gives no log in the console then we continue the loop
+                #             continue
+                #         else: #when there is log
+                #             fgh = logg[-1] #retrieving the most recent log
+                #             message = fgh['message'] #The above most recent log is a dictonary. Information we need is inside the key 'message' of this dict. So, storing the corresponding value of the key into a ariable
+                #             if re.search(r'\"hide blockui spinner\.\.\.\"', message): #checking if the most recent log is the one we want & is so then breaking the loop
+                #                 break
+                #     bar.update(i+1)
+
+
+                if i == 0: #if first page
                     try:
-                        '''--VERY IMPORTANT--'''
                         #Now, we wait for a maximum of 20 seconds until the button 'Next' appears on the webpage.
                         #Not doing this will result in inconsistent data being gather.
                         el = WebDriverWait(self.driver, timeout=20).until(lambda d: d.find_element(By.PARTIAL_LINK_TEXT, "Next")) #This will provide a reference to the button we need to click
-
                         #clicking the button now
                         ActionChains(self.driver).click(el).perform()
                     except:
@@ -269,11 +301,34 @@ class BetaBot:
                         bar.finish()
                         self.driver.quit()
                         sys.exit('\nWebsite took too long to load. Please run the script again!\n')
-                    
-                    #Below code will update the position of the status bar and update the percentage shown.
-                    bar.update(i+1)
-                else:
-                    break
+                    else:
+                        bar.update(i+1)
+
+                elif i !=0 and i != no_of_cliks_to_perform: #if second page to the last page
+                    try:
+                        el = WebDriverWait(self.driver, timeout=20).until(lambda d: d.find_element(By.PARTIAL_LINK_TEXT, "Next")) #This will provide a reference to the button we need to click
+                        ActionChains(self.driver).click(el).perform()
+                    except:
+                        #If the 'try' block fails the we quit the chrome browser and exit the program with message
+                        bar.finish()
+                        self.driver.quit()
+                        sys.exit('\nWebsite took too long to load. Please run the script again!\n')
+                    else:
+                        '''--VERY IMPORTANT--'''
+                        #Now we make the script wait again until the chrome browser's console gives desired message as the last and the most recent log message
+                        #which is "hide blockui spinner...". When this log message is thrown to the console by the website, the websites fully loads the next page
+                        #Not doing this will result in inconsistent data being gather.
+                        while True: # looping until condition is fulfilled; new wait operation
+                            logg = self.driver.get_log('browser') #getting chrome browser's console log into a list of dictonaries
+                            if len(logg) == 0: #if browser gives no log in the console then we continue the loop
+                                continue
+                            else: #when there is log
+                                fgh = logg[-1] #retrieving the most recent log
+                                message = fgh['message'] #The above most recent log is a dictonary. Information we need is inside the key 'message' of this dict. So, storing the corresponding value of the key into a ariable
+                                if re.search(r'\"hide blockui spinner\.\.\.\"', message): #checking if the most recent log is the one we want & is so then breaking the loop
+                                    break
+                        bar.update(i+1)
+
             #Once the loop finishes, we tell our status bar that our objective is complete and satus bar shows 100%
             bar.finish()
 
@@ -570,6 +625,11 @@ class BetaBot:
         self.driver.quit()
 
 if __name__ == '__main__':
+    # first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
+    # first.StartBot()
+    # first.Store_SOL()
+    # first.StopBot()
+
     usr_in = sys.argv[1].lower()
     first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
 
@@ -600,14 +660,17 @@ if __name__ == '__main__':
                     os.chdir('../../Scripts')  
                     first.StartBot()
                     first.Store_SOL()
-                    first.StopBot()
+                    
                     print(f"\n{datetime.datetime.today().strftime('%Y-%m-%d')} copy of Skilled Occupation List Australia is now stored and, can be used to generate report.")
                     print("---------------------------------------------------------------------------------------------------------------------------\n")
                 except:
-                    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
-                    os.remove(f'../Data/Records/{current_date}.csv')
-                    sys.exit('\nSorry. Some error occured during the retrieval process.')
-                    
+                    if os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
+                        current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+                        os.remove(f'{current_date}.csv')    
+                        sys.exit('\nSorry. Some error occured during the retrieval process.')
+                    else:
+                        sys.exit('\nSorry. Some error occured during the retrieval process.')
+                
             else:
                 print("\n++Today's Skilled Occupation List already stored++\n")
                 os.chdir('../../Scripts')  
