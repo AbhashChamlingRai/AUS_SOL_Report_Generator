@@ -6,23 +6,21 @@ import os
 import platform
 import re
 import sys
-import time
-
-from tqdm import tqdm
-import progressbar
 import requests
+
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver import ActionChains
-from selenium.webdriver.chromium.options import ChromiumOptions
-from selenium.webdriver.common import options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from fpdf import FPDF, HTMLMixin
 from fpdf.enums import XPos, YPos
+
+from selenium import webdriver
+from selenium.webdriver import ActionChains
+from selenium.webdriver.chromium.options import ChromiumOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.support.ui import WebDriverWait
+
+from tqdm import tqdm
 
 '''
                                      DEFAULT DIRECTORY STRUCTURE
