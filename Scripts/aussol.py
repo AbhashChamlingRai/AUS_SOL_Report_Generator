@@ -22,6 +22,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from fpdf import FPDF, HTMLMixin
+from fpdf.enums import XPos, YPos
 
 '''
                                      DEFAULT DIRECTORY STRUCTURE
@@ -41,12 +42,14 @@ from fpdf import FPDF, HTMLMixin
 '''
 
 class PDF(FPDF, HTMLMixin):
-    current0 = ""
+    current0 = []
     def header(self):
+        dir_checker = str(os.getcwd())
+        if dir_checker.endswith("Records"):
+            os.chdir("../../Scripts")
         # Rendering logo:
 
         #self.image("aus.png", 65, -16, 80)
-
         self.image("../Data/Resources/PDF/kang.svg", 95, 3, 20)
         self.set_font("helvetica", "B", 27)
         self.cell(80)
@@ -60,21 +63,44 @@ class PDF(FPDF, HTMLMixin):
         # Performing a line break:
         self.ln()
 
-        
-        #datetime.datetime.today().strftime('%Y-%m-%d')
-        current = PDF.current0.split("-")
-        y, m, d = current[0], current[1], current[2]
-        if current[1][0]=='0':
-            m = int(current[1][-1])
-        if current[2][0]=='0':
-            d = current[2][-1]
-        M = ["Janurary", "February", "March", "April", "May", "June", "July", "August", "September", "August", "November", "December"]
-        
-        self.set_font("helvetica", size=14)
-        self.cell(60)
-        self.cell(70, 10, f"{str(d)} {str(M[m-1])}, {str(y)}", align="C")
-        self.ln(15)
+        if len(PDF.only_in_end_dateent0) == 1:
+            #datetime.datetime.today().strftime('%Y-%m-%d')
+            only_in_end_dateent = PDF.only_in_end_dateent0[0].split("-")
+            y, m, d = only_in_end_dateent[0], only_in_end_dateent[1], only_in_end_dateent[2]
+            if only_in_end_dateent[1][0]=='0':
+                m = int(only_in_end_dateent[1][-1])
+            if only_in_end_dateent[2][0]=='0':
+                d = only_in_end_dateent[2][-1]
+            M = ["Janurary", "February", "March", "April", "May", "June", "July", "August", "September", "August", "November", "December"]
 
+            self.set_font("helvetica", size=14)
+            self.cell(60)
+            self.cell(70, 10, f"{str(d)} {str(M[m-1])}, {str(y)}", align="C")
+            self.ln(15)
+        elif len(PDF.only_in_end_dateent0) == 2:
+            combined_dates = []
+            for i in PDF.only_in_end_dateent0:
+                only_in_end_dateent = i.split("-")
+                y, m, d = only_in_end_dateent[0], only_in_end_dateent[1], only_in_end_dateent[2]
+                if only_in_end_dateent[1][0]=='0':
+                    m = int(only_in_end_dateent[1][-1])
+                if only_in_end_dateent[2][0]=='0':
+                    d = only_in_end_dateent[2][-1]
+                M = ["Janurary", "February", "March", "April", "May", "June", "July", "August", "September", "August", "November", "December"]
+                _txt = f"{str(d)} {str(M[m-1])}, {str(y)}"
+                combined_dates.append(_txt)
+
+            self.set_font("helvetica", size=14)
+            self.cell(60)
+            self.cell(70, 10, f"{combined_dates[0]} to {combined_dates[1]}", align="C")
+            self.ln(15)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("helvetica", "I", 8)
+        #printing page number
+        self.cell(0, 8, f"page {self.page_no()}/{{nb}}", align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.cell(0,2,r"https://github.com/AbhashChamlingRai/AUS_SOL_Report_Generator", align="C")
 
 class BetaBot:
     '''
@@ -93,18 +119,17 @@ class BetaBot:
     def __init__(self, url) -> None:
         self.link = url
 
-    def Report_Generator(self, in_dict):
+    def It_Report_Generator(self, in_dict):
         '''Takes an input of list of dictonaries given by "BetaBot" class and generates a report pdf file.'''
         self.list_to_be_reported = in_dict
 
         os.chdir("../Data/Records")
-
         csv_files = os.listdir()
 
         #Below two lines of code should be repeated evertime when a new pdf report file needs to be created so at to give the correct date in the pdf file
         #Giving the date of the csv file in the database from which we extracted the information to the class 'PDF'
         to_set = csv_files[-1].split(".")[0] #date in which the most recent csv file was created
-        PDF.current0 = to_set #giving it to the PDF class to set its class variable(current0) with the value of "to_set"
+        PDF.only_in_end_dateent0 = [to_set] #giving it to the PDF class to set its class variable(only_in_end_dateent0) with the value of "to_set"
         
         #1st variable
         #Filtering visa list from every occupations in the latest entry of Skilled Occupation List in the database
@@ -186,7 +211,7 @@ class BetaBot:
         #setting font size
         pdf.set_font(size=14)
         pdf.cell(12) #moving the ellement to be added 12 units to the right
-        pdf.multi_cell(align="L", w=170, txt="The Skilled Occupation List is the current occupations eligible for different visa types. The following visas are available to individuals who are qualified to work or train in an eligible skilled occupation in Australia and can meet all other requirements:")
+        pdf.multi_cell(align="L", w=170, txt="The Skilled Occupation List is the only_in_end_dateent occupations eligible for different visa types. The following visas are available to individuals who are qualified to work or train in an eligible skilled occupation in Australia and can meet all other requirements:")
         pdf.ln(4) #Breaking line with 4 units
 
         pdf.set_font(size=13)
@@ -287,6 +312,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                     pdf.ln(0)
 
@@ -325,6 +351,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                 pdf.ln(0)
 
@@ -364,6 +391,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                     pdf.ln(0)
 
@@ -402,6 +430,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                 pdf.ln(0)
 
@@ -438,6 +467,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                     pdf.ln(0)
 
@@ -476,6 +506,7 @@ class BetaBot:
 --> {r[titles_[4]]}
 {titles_[5].upper()}:
 --> {r[titles_[5]]}
+
 ''')
                 pdf.ln(0)
 
@@ -611,7 +642,7 @@ class BetaBot:
     #First 
     def Store_SOL(self):
         #The two lines of codes below are used to find how many times our script has to perform an action similar to performing a left mouse click on button inside the website
-        indexing_list = re.findall(r"Showing\s(\d\d)\sout\sof\s(\d\d\d)\sitems\sthat\smatch\syour\scriteria", self.driver.page_source)[0] #driver.page_source will give the source code of the currently opened webpage
+        indexing_list = re.findall(r"Showing\s(\d\d)\sout\sof\s(\d\d\d)\sitems\sthat\smatch\syour\scriteria", self.driver.page_source)[0] #driver.page_source will give the source code of the only_in_end_dateently opened webpage
         no_of_cliks_to_perform = int(indexing_list[1])//int(indexing_list[0])
         
         # #Below 2 lines of codes are for initiating a loading status percentage bar
@@ -628,9 +659,9 @@ class BetaBot:
         #Appending an extra element to the the 'heading list' which will act as title for the sixth column of our final data
         headings.append("For more information: ")
 
-        #So, now a file with title as the current date and extension '.csv' is created inside 'WEBSCRAPPING\Data\Records' folder and data in 'processed_list' is stored there
-        current_date = datetime.datetime.today().strftime('%Y-%m-%d')
-        with open(f'../Data/Records/{current_date}.csv','w') as f:
+        #So, now a file with title as the only_in_end_dateent date and extension '.csv' is created inside 'WEBSCRAPPING\Data\Records' folder and data in 'processed_list' is stored there
+        only_in_end_dateent_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        with open(f'../Data/Records/{only_in_end_dateent_date}.csv','w') as f:
             writer = csv.writer(f, delimiter="#")
             writer.writerow(headings)
         
@@ -642,7 +673,7 @@ class BetaBot:
                 web = BeautifulSoup(table_body, 'html.parser') #Finally, converting into BeautifulSoup4 object
                 each_row = web.find_all("tr") #Keeping all instances of 'tr' element insde 'tbody' element in a list
 
-                #Below list variable will store information of all occupations present in the currently opened webpage in the selenuim chrome browser in a list(nested).
+                #Below list variable will store information of all occupations present in the only_in_end_dateently opened webpage in the selenuim chrome browser in a list(nested).
                 twenty = []
 
                 #looping through each element of list 'each_row'
@@ -653,7 +684,7 @@ class BetaBot:
                         #Here each usefull element of the list 'each_row' has 5 'td elements'. So, we again make it into a list.
                         tr = each.find_all("td")
                         
-                        #Below 'Val" variable is currently an empty list but will be populated will information related to a single occupation in SOL
+                        #Below 'Val" variable is only_in_end_dateently an empty list but will be populated will information related to a single occupation in SOL
                         val = []
 
                         #Again we loop through the elements of 'tr' list and filter out just the data we need and everytime append any useful info to 'val' list
@@ -686,7 +717,7 @@ class BetaBot:
                         #Appending a row to the list variable 'twenty'
                         twenty.append(val)
 
-                #Now the 'twenty' list variable has the processed data of all occupations present in currently opened chrome browser
+                #Now the 'twenty' list variable has the processed data of all occupations present in only_in_end_dateently opened chrome browser
                 #We write it the above mentioned csv file
                 writer.writerows(twenty)
 
@@ -756,6 +787,236 @@ class BetaBot:
                                 if re.search(r'\"hide blockui spinner\.\.\.\"', message): #checking if the most recent log is the one we want & is so then breaking the loop
                                     break
 
+    def pdf_table(self, p, in_d):
+        pdf = p
+        titles_ = list(in_d[0].keys())        
+        for mm, r in enumerate(in_d):
+            mmm =mm + 1
+            if len(str(mmm))==1:
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(6)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(6)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                pdf.ln(0)
+
+
+            if len(str(mmm))==2:     
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(2)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(2)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                pdf.ln(0)
+
+            if len(str(mmm))==3:     
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(-2)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(-2)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+
+''')
+                pdf.ln(0)
+
     def SOL_Report_Generator(self):
         '''This function generates a txt report using the previously stored datas in "Data\Records" directory'''
         os.chdir('../Data/Records')
@@ -815,6 +1076,7 @@ class BetaBot:
                 a1.pop(2)
                 a1.insert(2, to_insert)
 
+
             #same as above
             a2 = user_in_end.split("-")
             if a2[1][0] == '0':
@@ -834,6 +1096,7 @@ class BetaBot:
             else:
                 print("End date should be older than start date!")
 
+        print("\nPlease wait while the script generates report.")
 
         #Find the nearest date to the given input if it is valid
         test_date_list = []
@@ -850,7 +1113,8 @@ class BetaBot:
 
         #For start date and end date
         date_list = [start_date, end_date]
-        nearest_dates = []
+
+        nearest_dates = []#this will have the nearest dates to the ones entered by user
         for qq in date_list:
             cloz_dict = {abs(qq.timestamp() - date.timestamp()) : date for date in test_date_list}
             res = cloz_dict[min(cloz_dict.keys())]
@@ -858,98 +1122,269 @@ class BetaBot:
 
         #nearest_dates list has a list of nearest start and end date of user input
 
-        #opening the files with names provided by "nearest_dates list"
-        start_date_dict = []
-        with open(nearest_dates[0] + ".csv") as h:
-                reader = csv.DictReader(h, delimiter="#")
-                for u in reader:
-                    start_date_dict.append(u)
+        #Below two will store only "ANZSCO code" of every element of a csv file in the database
+        start = [] 
+        end = []
 
-        end_date_dict = []
-        with open(nearest_dates[1] + ".csv") as f:
+        #Below two will store every element of a csv file in the database in dictionary format with not just the "ANZSCO code" but all the info
+        start_dict = []
+        end_dict = []
+
+        #Opening csv file corresponding to the nearest user given start date
+        with open(f'{nearest_dates[0]}.csv') as f:
             reader = csv.DictReader(f, delimiter="#")
-            for j in reader:
-                end_date_dict.append(j)
+            for i in reader:
+                start.append(i["ANZSCO code"])
+                start_dict.append(i)
+
+        #Opening csv file corresponding to the nearest user given end date
+        with open(f'{nearest_dates[-1]}.csv') as g:
+            reader1 = csv.DictReader(g, delimiter="#")
+            for j in reader1:
+                end.append(j["ANZSCO code"])
+                end_dict.append(j)
 
 
-        #prv will store every element of csv file corresponding to the nearest user given start date that is not in csv file corresponding to the nearest user given end date 
-        prv = []
-        for g in start_date_dict:
-            if g not in end_date_dict:
-                prv.append(g)
-        #prv will store every element of csv file corresponding to the nearest user given end date that is not in csv file corresponding to the nearest user given start date 
-        curr = []
-        for y in end_date_dict:
-            if y not in start_date_dict:
-                curr.append(y)
+        intersection = list(set(end).intersection(start))
+        intersection_dict = [] #(In dictionary)This will store every element that is common between csv file corresponding to the nearest user given start date and end date
+        for mk in intersection:
+            for kk in end_dict:
+                if mk == kk["ANZSCO code"]:
+                    intersection_dict.append(kk)
 
-        account = {}
+        only_in_start = list(set(start).difference(end))
+        only_in_start_dict = [] #(In dictionary)this will will store every element of csv file corresponding to the nearest user given start date that is not in csv file corresponding to the nearest user given end date 
+        for mk in only_in_start:
+            for kk in start_dict:
+                if str(mk) == kk["ANZSCO code"]:
+                    only_in_start_dict.append(kk)
 
-        if len(curr) == 0 and len(prv) != 0:
-            nam = nearest_dates[0] + " to " + nearest_dates[1] + "; " + str(len(prv)) + " jobs removed from Skilled Occupation List Australia: "
-            account[nam] = prv
-            account[f"All {str(len(end_date_dict))} currently available jobs in Skilled Occupation List Australia: "] = end_date_dict
-        elif len(curr) != 0 and len(prv) == 0:
-            nam = nearest_dates[0] + " to " + nearest_dates[1] + "; " + str(len(curr)) + " jobs added to Skilled Occupation List Australia: "
-            account[nam] = curr
-            account[f"All {str(len(end_date_dict))} currently available jobs in Skilled Occupation List Australia: "] = end_date_dict
-        elif len(curr) == 0 and len(prv) == 0:
-            nam = nearest_dates[0] + " to " + nearest_dates[1] + "; " + " No changes in Skilled Occupation List Australia; " + str(len(end_date_dict)) + " occupations present currently: "
-            account[nam] = end_date_dict
-        else:
-            nam = nearest_dates[0] + " to " + nearest_dates[1] + "; " + str(len(prv)) + " jobs removed and, " + str(len(curr)) + " new jobs added in Skilled Occupation List Australia: "
-            combined = [prv, curr]
-            account[nam] = combined
-            account[f"All {str(len(end_date_dict))} currently available jobs in Skilled Occupation List Australia: "] = end_date_dict
-        #account is no longer empty and contains all the info we need
 
-        os.chdir(os.path.pardir) #report file will be stored in this directory
+        only_in_end = list(set(end).difference(start))
+        only_in_end_dict = [] #(In dictionary)this will store every element of csv file corresponding to the nearest user given end date that is not in csv file corresponding to the nearest user given start date 
+        for mk in only_in_end:
+            for kk in end_dict:
+                if str(mk) == kk["ANZSCO code"]:
+                    only_in_end_dict.append(kk)
 
-        with open("(SOL-Aus)ALL_JOBS_REPORT.txt","w") as by:
-            for pp,kk in account.items():
-                if len(kk) != 2:
-                    keys_ = list(kk[0].keys())
-                    by.write(pp + "\n\n")
-                    for nn,jk in enumerate(kk):
-                        by.write(f'\t{str(nn+1)}. [{str(jk[keys_[0]])}]\n')
-                        by.write(f'\t\t{str(keys_[1])}: {str(jk[keys_[1]])}\n')
 
-                        #The element of the list 'jk[keys_[2]]' is also a list which python converted into string. So, using evaluation method of 'ast' library we can safely convert it into a list
-                        x = ast.literal_eval(jk[keys_[2]])
-                        x = [n.strip() for n in x]
-                        for gg in x: #jk[keys_[2]] is a list
-                            if gg == x[0]:
-                                by.write(f'\t\t{str(keys_[2])}: {str(gg)}\n')
-                            else:
-                                by.write(f'\t\t      {gg}\n')
 
-                        by.write(f'\t\t{str(keys_[3])}: {str(jk[keys_[3]])}\n')
-                        by.write(f'\t\t{str(keys_[4])}: {str(jk[keys_[4]])}\n')
-                        by.write(f'\t\t{str(keys_[5])}: {str(jk[keys_[5]])}\n')
-                        by.write(r"----------------------------------------------------------------------------------------------------------------------" + "\n\n")
-                elif len(kk) == 2:
-                    #KK is in this format: [{}, {}]
-                    by.write(pp + "\n\n")
-                    for num,ui in enumerate(kk):
-                        #ui is in this format: {}
-                        keys_ = list(ui[0].keys())
-                        if num == 0:
-                            by.write("\t****Removed jobs are listed below:")
-                            by.write("\n")
-                        if num == 1:
-                            by.write("\t****Added jobs are listed below:")
-                            by.write("\n")
-                        for nn,jk in enumerate(ui):
-                            by.write("\t\t" + str(nn+1) + ". [" + str(jk[keys_[0]]) + "]" + "\n")
-                            by.write("\t\t\t" + str(keys_[1]) + ": " + str(jk[keys_[1]]) + "\n")
-                            by.write("\t\t\t" + str(keys_[2]) + ": " + str(jk[keys_[2]]) + "\n")
-                            by.write("\t\t\t" + str(keys_[3]) + ": " + str(jk[keys_[3]]) + "\n")
-                            by.write("\t\t\t" + str(keys_[4]) + ": " + str(jk[keys_[4]]) + "\n")
-                            by.write("\n")
-                        by.write(r"----------------------------------------------------------------------------------------------------------------------" + "\n\n\n")
-        print("\nDone!!\nGo to '{}' and open '(SOL-Aus)ALL_JOBS_REPORT.txt'.\n".format(os.getcwd()))
-        os.chdir(os.path.join(os.path.pardir, r"Scripts"))
+        #Below two lines of code should be repeated evertime when a new pdf report file needs to be created so at to give the correct date in the pdf file
+        #Giving the date of the csv file in the database from which we extracted the information to the class 'PDF'
+        to_set = [nearest_dates[0], nearest_dates[1]] #date in which the most recent csv file was created
+        PDF.only_in_end_dateent0 = to_set #giving it to the PDF class to set its class variable(only_in_end_dateent0) with the value of "to_set"
 
+        #1st variable
+        #Filtering visa list from every occupations in the latest entry of Skilled Occupation List in the database
+        visa = []
+        with open(f'{nearest_dates[1]}.csv') as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["Visa"]
+                x = ast.literal_eval(kk)
+                x = [n.strip() for n in x]
+                if len(x) == 1:
+                    if x[0] not in visa:
+                        visa.append(x[0])
+                else:
+                    for h in x:
+                        if h not in visa:
+                            visa.append(h)
+
+        #2nd variable
+        #Below list variable will store all the lists included in Skilled Occupation List of Australia but in short form like: ROL, STSOL, MLTSSL, etc
+        sol_list_shortform = []
+        with open(f'{nearest_dates[1]}.csv') as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["List"]
+                if kk not in sol_list_shortform:
+                    if not re.search(r";|\s", str(kk)):
+                        sol_list_shortform.append(kk.strip())
+                    else:
+                        if re.search(r";", str(kk)):
+                            t = kk.split(";")
+                            for num, j in enumerate(t):
+                                if j.strip() not in sol_list_shortform:
+                                    sol_list_shortform.append(j.strip())
+                        if re.search(r" ", str(kk)):
+                            t = kk.split(" ")
+                            for num, j in enumerate(t):
+                                if j.strip() not in sol_list_shortform:
+                                    sol_list_shortform.append(j.strip())
+        #Below list variable will store each and every element of 'sol_list_shortform' with its full-form appended to it
+        sol_list_fullform = []
+        for el in sol_list_shortform:
+            if el.upper() == "ROL":
+                sol_list_fullform.append(f"ROL - The Regional Occupation List")
+            elif el.upper() == "STSOL":
+                sol_list_fullform.append(f"STSOL - Short-term Skilled Occupation List")
+            elif el.upper() == "MLTSSL":
+                sol_list_fullform.append(f"MLTSSL - Medium and Long-term Strategic Skills List")
+            elif el.upper() == "RSMS":
+                sol_list_fullform.append(f"RSMS - Regional Sponsored Migration Scheme list")
+
+
+
+        #3rd variable
+        #storing names of assessing authorities from the latest entry in the database
+        assessing_authorities = []
+        with open(f'{nearest_dates[1]}.csv') as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["Assessing authority"]
+                if kk != '':
+                    if kk not in assessing_authorities:
+                        assessing_authorities.append(kk)
+
+
+        os.chdir("../../Scripts")
+
+
+        '''opening a pdf object in the script.... this won't make a file in the system... pdf.output() will'''
+        pdf = PDF(format="a4")
+        pdf.add_page() #adding a starting page
+
+
+        '''1st section (Description & listing all visa types)'''
+        #setting font size
+        pdf.set_font(size=14)
+        pdf.cell(12) #moving the ellement to be added 12 units to the right
+        pdf.multi_cell(align="L", w=170, txt="The Skilled Occupation List is a list of current occupations eligible for different visa types. The following visas are available to individuals who are qualified to work or train in an eligible skilled occupation in Australia and can meet all other requirements:")
+        pdf.ln(4) #Breaking line with 4 units
+
+        pdf.set_font(size=13)
+        for n,i in enumerate(visa): #printing visa list in the pdf file
+            if n+1 < 10:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(3)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+            else:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(1)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+        pdf.ln(7)
+
+
+
+
+        '''2nd section (giving all the list types in skilled occupation list)'''
+        #for list types
+        pdf.set_font(size=14)
+        pdf.cell(12)
+        pdf.multi_cell(align="L", w=170, txt="All the lists included in Skilled Occupation List of Australia:")
+        pdf.ln(3)
+
+        pdf.set_font(size=13) 
+        for n,i in enumerate(sol_list_fullform): #printing all the sol list types in the pdf file
+            pdf.cell(18)
+            pdf.cell(txt=f"{n+1}.")
+            pdf.cell(3)
+            pdf.multi_cell(align="L", w=152, txt=f"{i}")
+            pdf.ln(2)
+        pdf.ln(7)
+
+
+
+
+        '''3nd section (listing all assessing authorities in the Skilled Occupation List of Australia )'''
+        pdf.set_font(size=14)
+        pdf.cell(12)
+        pdf.multi_cell(align="L", w=170, txt="All assessing authorities in the Skilled Occupation List of Australia:")
+        pdf.ln(3)
+
+        pdf.set_font(size=13)
+        for n,i in enumerate(assessing_authorities):
+            if n+1 < 10:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(3)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+            else:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(1)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+
+        
+
+
+
+
+
+
+
+
+
+        if len(only_in_start_dict) != 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"{len(only_in_start_dict)} occupation removed from the Skilled Occupation List of Australia between {nearest_dates[0]} to {nearest_dates[-1]}:")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=only_in_start_dict)
+
+        
+        if len(only_in_end_dict) != 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"{len(only_in_end_dict)} occupation added to the Skilled Occupation List of Australia between {nearest_dates[0]} to {nearest_dates[-1]}:")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=only_in_end_dict)
+        
+        
+        if len(only_in_start_dict) != 0 and len(only_in_end_dict) == 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"Initially, there were {len(start_dict)} occupations in Skilled Occupation List of Australia in {nearest_dates[0]}. {len(only_in_start_dict)} occupations got removed. Hence, {len(start_dict) - len(only_in_start_dict)} occupations remains currently in {nearest_dates[-1]}. They are listed below:")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=intersection_dict)
+
+
+        if len(only_in_start_dict) == 0 and len(only_in_end_dict) != 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"Initially, there were {len(start_dict)} occupations in Skilled Occupation List of Australia in {nearest_dates[0]}. {len(only_in_end_dict)} occupations were added. Hence, {len(start_dict) + len(intersection_dict)} occupations remains currently in {nearest_dates[-1]}. Added occupations are given above. The remaining {len(intersection_dict)} occupations are listed below:")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=intersection_dict)
+        
+        if len(only_in_start_dict) != 0 and len(only_in_end_dict) != 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"Initially, there were {len(start_dict)} occupations in Skilled Occupation List of Australia in {nearest_dates[0]}. {len(only_in_start_dict)} occupations were removed and {len(only_in_end_dict)} added. Hence, {len(end_dict)} occupations remains currently in {nearest_dates[-1]}. Removed and added occupations are given above. The remaining {len(intersection_dict)} occupations are listed below:")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=intersection_dict)
+
+        if len(only_in_start_dict) == 0 and len(only_in_end_dict) == 0:
+            pdf.add_page()
+            pdf.set_font(size=14)
+            pdf.cell(12)
+            pdf.multi_cell(align="L", w=170, txt=f"There were {len(start_dict)} occupations in Skilled Occupation List of Australia in {nearest_dates[0]}. The number of occupations present in {nearest_dates[-1]} also remains same. No occupations were added or removed between the given dates. List of all {len(end_dict)} occupations are given below: ")
+            pdf.ln(5)
+
+            BetaBot.pdf_table(self, p=pdf, in_d=end_dict)
+
+
+        pdf.output("../All_Occupation_Report_Aus.pdf")
+        
+        os.chdir("../")
+        print(f"\nReport pdf file is stored in '{os.getcwd()}' directory as 'All_Occupation_Report_Aus.pdf'.")
+        os.chdir("Scripts")
 
     def IT_Jobs_Only(self):
         '''This function returns information related to IT jobs listed in SOL from the database'''
@@ -1039,9 +1474,11 @@ class BetaBot:
 
 # if __name__ == '__main__':
 #     first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
-#     first.Report_Generator( in_dict=first.IT_Jobs_Only())
+#     # first.It_Report_Generator( in_dict=first.IT_Jobs_Only())
 #     # first.Store_SOL()
 #     # first.StopBot()
+#     print("\n-- TO GET THE LATEST INFORMATION IN THE REPORT, RUN 'aussol store' FIRST AND THEN THIS ARGUMENT")
+#     first.SOL_Report_Generator()
 
 if __name__ == '__main__':
 
@@ -1071,8 +1508,8 @@ if __name__ == '__main__':
             except (requests.ConnectionError, requests.Timeout) as exception:
                 sys.exit("\nSorry. Cannot store data when offline. Please give this argument again when internet is available.")
             else:
-                #Checking whether SOL of the current date is already stored in database
-                #If it already exists then it will skip the below block of code and only if it doesn't exist then it will run the function to store SOL of the current date
+                #Checking whether SOL of the only_in_end_dateent date is already stored in database
+                #If it already exists then it will skip the below block of code and only if it doesn't exist then it will run the function to store SOL of the only_in_end_dateent date
                 os.chdir(os.path.join(os.path.pardir, r"Data\Records"))
                 if not os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
                     try:
@@ -1086,8 +1523,8 @@ if __name__ == '__main__':
                         print("---------------------------------------------------------------------------------------------------------------------------\n")
                     except:
                         if os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
-                            current_date = datetime.datetime.today().strftime('%Y-%m-%d')
-                            os.remove(f'{current_date}.csv')    
+                            only_in_end_dateent_date = datetime.datetime.today().strftime('%Y-%m-%d')
+                            os.remove(f'{only_in_end_dateent_date}.csv')    
                             sys.exit('\nSorry. Some error occured during the retrieval process.')
                         else:
                             sys.exit('\nSorry. Some error occured during the retrieval process.')
@@ -1102,7 +1539,7 @@ if __name__ == '__main__':
 
         elif usr_in == 'reportit':
             print("\n-- TO GET THE LATEST INFORMATION IN THE REPORT, RUN 'aussol store' FIRST AND THEN THIS ARGUMENT")
-            first.Report_Generator( in_dict=first.IT_Jobs_Only())
+            first.It_Report_Generator( in_dict=first.IT_Jobs_Only())
             
         else:
             sys.exit("\nPlease enter one of following arguments after aussol.py with an space in between.\n  Enter command like this: aussol<space><argument>\n\t\tArguments: 1. 'store' for storing today's Skilled Occupation List\n\t\t           2. 'reportALL' for generating report of all occupations between two dates\n\t\t           3. 'reportIT' for  generating report of only IT occupations")
