@@ -32,7 +32,7 @@ After running above command the script automatically stores latest Skilled Occup
 > ***$ aussol.py reportALL***
 
 &nbsp;&nbsp;&nbsp;&nbsp;
-Running the above command will generate an Skilled Occupation List report of all occupations between two desired dates from script's database.\
+Running the above command will generate an Skilled Occupation List report of all occupations between two desired dates from script's database.
 
 &nbsp;&nbsp;&nbsp;&nbsp;
 If in case, the script's database does not have Skilled Occupation List of the entered dates then, it will automatically choose dates nearest to it in its database to generate a report file.
