@@ -21,6 +21,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from fpdf import FPDF, HTMLMixin
+
 '''
                                      DEFAULT DIRECTORY STRUCTURE
                                          (Do Not Change)
@@ -38,6 +40,42 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 (Portable chrome + chromedriver)[Chrome]        [Records](Database)
 '''
 
+class PDF(FPDF, HTMLMixin):
+    current0 = ""
+    def header(self):
+        # Rendering logo:
+
+        #self.image("aus.png", 65, -16, 80)
+
+        self.image("../Data/Resources/PDF/kang.svg", 95, 3, 20)
+        self.set_font("helvetica", "B", 27)
+        self.cell(80)
+
+        self.ln()
+
+        self.set_font("helvetica", "B", 17)
+        self.cell(60)
+        self.cell(70, 10, "Skilled occupation list", border=1, align="C")
+
+        # Performing a line break:
+        self.ln()
+
+        
+        #datetime.datetime.today().strftime('%Y-%m-%d')
+        current = PDF.current0.split("-")
+        y, m, d = current[0], current[1], current[2]
+        if current[1][0]=='0':
+            m = int(current[1][-1])
+        if current[2][0]=='0':
+            d = current[2][-1]
+        M = ["Janurary", "February", "March", "April", "May", "June", "July", "August", "September", "August", "November", "December"]
+        
+        self.set_font("helvetica", size=14)
+        self.cell(60)
+        self.cell(70, 10, f"{str(d)} {str(M[m-1])}, {str(y)}", align="C")
+        self.ln(15)
+
+
 class BetaBot:
     '''
     By default this class has a method for:
@@ -54,6 +92,399 @@ class BetaBot:
     '''
     def __init__(self, url) -> None:
         self.link = url
+
+    def Report_Generator(self, in_dict):
+        '''Takes an input of list of dictonaries given by "BetaBot" class and generates a report pdf file.'''
+        self.list_to_be_reported = in_dict
+
+        os.chdir("../Data/Records")
+
+        csv_files = os.listdir()
+
+        #Below two lines of code should be repeated evertime when a new pdf report file needs to be created so at to give the correct date in the pdf file
+        #Giving the date of the csv file in the database from which we extracted the information to the class 'PDF'
+        to_set = csv_files[-1].split(".")[0] #date in which the most recent csv file was created
+        PDF.current0 = to_set #giving it to the PDF class to set its class variable(current0) with the value of "to_set"
+        
+        #1st variable
+        #Filtering visa list from every occupations in the latest entry of Skilled Occupation List in the database
+        visa = []
+        with open(csv_files[-1]) as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["Visa"]
+                x = ast.literal_eval(kk)
+                x = [n.strip() for n in x]
+                if len(x) == 1:
+                    if x[0] not in visa:
+                        visa.append(x[0])
+                else:
+                    for h in x:
+                        if h not in visa:
+                            visa.append(h)
+
+        #2nd variable
+        #Below list variable will store all the lists included in Skilled Occupation List of Australia but in short form like: ROL, STSOL, MLTSSL, etc
+        sol_list_shortform = []
+        with open(csv_files[-1]) as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["List"]
+                if kk not in sol_list_shortform:
+                    if not re.search(r";|\s", str(kk)):
+                        sol_list_shortform.append(kk.strip())
+                    else:
+                        if re.search(r";", str(kk)):
+                            t = kk.split(";")
+                            for num, j in enumerate(t):
+                                if j.strip() not in sol_list_shortform:
+                                    sol_list_shortform.append(j.strip())
+                        if re.search(r" ", str(kk)):
+                            t = kk.split(" ")
+                            for num, j in enumerate(t):
+                                if j.strip() not in sol_list_shortform:
+                                    sol_list_shortform.append(j.strip())
+        #Below list variable will store each and every element of 'sol_list_shortform' with its full-form appended to it
+        sol_list_fullform = []
+        for el in sol_list_shortform:
+            if el.upper() == "ROL":
+                sol_list_fullform.append(f"ROL - The Regional Occupation List")
+            elif el.upper() == "STSOL":
+                sol_list_fullform.append(f"STSOL - Short-term Skilled Occupation List")
+            elif el.upper() == "MLTSSL":
+                sol_list_fullform.append(f"MLTSSL - Medium and Long-term Strategic Skills List")
+            elif el.upper() == "RSMS":
+                sol_list_fullform.append(f"RSMS - Regional Sponsored Migration Scheme list")
+
+
+
+        #3rd variable
+        #storing names of assessing authorities from the latest entry in the database
+        assessing_authorities = []
+        with open(csv_files[-1]) as f:
+            reader = csv.DictReader(f, delimiter='#')
+            for i in reader:
+                kk = i["Assessing authority"]
+                if kk != '':
+                    if kk not in assessing_authorities:
+                        assessing_authorities.append(kk)
+
+        os.chdir("../../Scripts")
+
+
+
+
+
+
+
+        '''opening a pdf object in the script.... this won't make a file in the system... pdf.output() will'''
+        pdf = PDF(format="a4")
+        pdf.add_page() #adding a starting page
+
+
+        '''1st section (Description & listing all visa types)'''
+        #setting font size
+        pdf.set_font(size=14)
+        pdf.cell(12) #moving the ellement to be added 12 units to the right
+        pdf.multi_cell(align="L", w=170, txt="The Skilled Occupation List is the current occupations eligible for different visa types. The following visas are available to individuals who are qualified to work or train in an eligible skilled occupation in Australia and can meet all other requirements:")
+        pdf.ln(4) #Breaking line with 4 units
+
+        pdf.set_font(size=13)
+        for n,i in enumerate(visa): #printing visa list in the pdf file
+            if n+1 < 10:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(3)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+            else:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(1)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+        pdf.ln(7)
+
+
+
+
+        '''2nd section (giving all the list types in skilled occupation list)'''
+        #for list types
+        pdf.set_font(size=14)
+        pdf.cell(12)
+        pdf.multi_cell(align="L", w=170, txt="All the lists included in Skilled Occupation List of Australia:")
+        pdf.ln(3)
+
+        pdf.set_font(size=13) 
+        for n,i in enumerate(sol_list_fullform): #printing all the sol list types in the pdf file
+            pdf.cell(18)
+            pdf.cell(txt=f"{n+1}.")
+            pdf.cell(3)
+            pdf.multi_cell(align="L", w=152, txt=f"{i}")
+            pdf.ln(2)
+        pdf.ln(7)
+
+
+
+
+        '''3nd section (listing all assessing authorities in the Skilled Occupation List of Australia )'''
+        pdf.set_font(size=14)
+        pdf.cell(12)
+        pdf.multi_cell(align="L", w=170, txt="All assessing authorities in the Skilled Occupation List of Australia:")
+        pdf.ln(3)
+
+        pdf.set_font(size=13)
+        for n,i in enumerate(assessing_authorities):
+            if n+1 < 10:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(3)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+            else:
+                pdf.cell(18)
+                pdf.cell(txt=f"{n+1}.")
+                pdf.cell(1)
+                pdf.multi_cell(align="L", w=152, txt=f"{i}")
+                pdf.ln(2)
+
+        pdf.add_page()
+
+                
+        titles_ = list(self.list_to_be_reported[0].keys())        
+        for mm, r in enumerate(self.list_to_be_reported):
+            mmm =mm + 1
+            if len(str(mmm))==1:
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(6)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(6)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                pdf.ln(0)
+
+            if mm==109:
+                break
+
+            if len(str(mmm))==2:     
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(2)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(2)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                pdf.ln(0)
+
+            if len(str(mmm))==3:     
+                with pdf.offset_rendering() as dummy:
+                    pdf.set_font(size=20)
+                    pdf.cell(-2)
+                    #pdf.multi_cell(w=5,txt="1.")
+                    pdf.cell(txt=f"{mm+1}.")
+                    pdf.set_font(size=15)
+                    pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                    pdf.ln(0)
+
+                    y= ast.literal_eval(r[titles_[2]])
+                    y = [n.strip() for n in y]
+
+                    abs_v = ''
+                    for yu in y:
+                        if yu == y[-1]:
+                            abs_v += f'\t- {yu}'
+                        else:
+                            abs_v += f'\t- {yu}\n'
+
+                    pdf.set_font(size=10)
+                    pdf.cell(14)
+                    pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                    pdf.ln(0)
+
+                if dummy.page_break_triggered:
+                    pdf.add_page()
+
+
+                pdf.set_font(size=20)
+                pdf.cell(-2)
+                #pdf.multi_cell(w=5,txt="1.")
+                pdf.cell(txt=f"{mm+1}.")
+                pdf.set_font(size=15)
+                pdf.multi_cell(align="C", w=170,h=10, border=1, txt=r[titles_[0]])
+                pdf.ln(0)
+
+                y= ast.literal_eval(r[titles_[2]])
+                y = [n.strip() for n in y]
+
+                abs_v = ''
+                for yu in y:
+                    if yu == y[-1]:
+                        abs_v += f'\t- {yu}'
+                    else:
+                        abs_v += f'\t- {yu}\n'
+
+                pdf.set_font(size=10)
+                pdf.cell(14)
+                pdf.multi_cell(align="L", w=170, border=1, txt=f'''
+{titles_[1].upper()}:
+--> {r[titles_[1]]}
+{titles_[2].upper()}:
+{abs_v}
+{titles_[3].upper()}:
+--> {r[titles_[3]]}
+{titles_[4].upper()}:
+--> {r[titles_[4]]}
+{titles_[5].upper()}:
+--> {r[titles_[5]]}
+''')
+                pdf.ln(0)
+
+
+        pdf.output("../IT_Occupation_Report_Aus.pdf")
+
+        os.chdir("../")
+        print(f"\nReport pdf file is stored in '{os.getcwd()}' directory as 'IT_Occupation_Report_Aus.pdf'.")
+        os.chdir("Scripts")
 
     #This method opens the portable chrome browser and opens the provided link 'url'
     def StartBot(self):
@@ -519,33 +950,13 @@ class BetaBot:
         print("\nDone!!\nGo to '{}' and open '(SOL-Aus)ALL_JOBS_REPORT.txt'.\n".format(os.getcwd()))
         os.chdir(os.path.join(os.path.pardir, r"Scripts"))
 
+
     def IT_Jobs_Only(self):
         '''This function returns information related to IT jobs listed in SOL from the database'''
 
         os.chdir('../Data/Records')
         files_csv = os.listdir()
 
-        with open('{}'.format(files_csv[-1])) as ff:
-            reader = csv.reader(ff, delimiter="#")
-            initial_list_variable = []
-            for i in reader:
-                initial_list_variable.append(i)
-        initial_li = initial_list_variable
-
-        #Below list will have just the data related to IT occupations
-        processed_list = []
-
-        #The following code will add the titles of the data to the begining of the list "processed_list"
-        processed_list.append(initial_li[0])
-
-        #Now we loop through the elements of "initial_li" list and filter the information we need using regex
-        for i in initial_li:
-            keywords = [r"ICT.*", r"[Cc]omputer.*", r"[Cc]ommunication.*", r"Software.*", r"Web.*", r"Programmer.*", r"Network.*", r"Database.*", r"261112", r"135111", r"262113", r"263211", r"263212", r"263213", r"263299", r"313111", r"313112", r"313113", r"313199", r"313211", r"313212", r"313213", r"313214", r"261313", r"261312", r"261211", r"263111"]
-            for bb in keywords:
-                if re.search(bb, str(i)) and i not in processed_list:
-                    processed_list.append(i)
-        os.chdir("../../Scripts")
-    
         '''Now we either print information on screen or store information on a file as per user input'''
         #Now we ask input if user wants to print the information in the terminal or to create a report file inside 'WEBSCRAPPING\Data' directory
         o = True
@@ -553,7 +964,28 @@ class BetaBot:
             print()
             from_user = input("Do you want to print the information here in the terminal or, create a report file?\nNOTE: Entering (y) will print the information here in the terminal and entering (n) will create a report file.\n[y/n]: ").lower()
             if from_user == 'y':
-                print(f'{files_csv[-1].split(".")[0]}: {len(processed_list)} IT occupations present in Skilled Occupation List of Australia:\n\n')
+                with open('{}'.format(files_csv[-1])) as ff:
+                    reader = csv.reader(ff, delimiter="#")
+                    initial_list_variable = []
+                    for i in reader:
+                        initial_list_variable.append(i)
+                initial_li = initial_list_variable
+
+                #Below list will have just the data related to IT occupations
+                processed_list = []
+
+                #The following code will add the titles of the data to the begining of the list "processed_list"
+                processed_list.append(initial_li[0])
+
+                #Now we loop through the elements of "initial_li" list and filter the information we need using regex
+                for i in initial_li:
+                    keywords = [r"ICT.*", r"[Cc]omputer.*", r"[Cc]ommunication.*", r"Software.*", r"Web.*", r"Programmer.*", r"Network.*", r"Database.*", r"261112", r"135111", r"262113", r"263211", r"263212", r"263213", r"263299", r"313111", r"313112", r"313113", r"313199", r"313211", r"313212", r"313213", r"313214", r"261313", r"261312", r"261211", r"263111"]
+                    for bb in keywords:
+                        if re.search(bb, str(i)) and i not in processed_list:
+                            processed_list.append(i)
+                os.chdir("../../Scripts")
+
+                print(f'\n{files_csv[-1].split(".")[0]}: {len(processed_list)} IT occupations present in Skilled Occupation List of Australia:\n')
                 for i in range(1, len(processed_list)):
                     print()
                     headers = processed_list[0]
@@ -576,52 +1008,43 @@ class BetaBot:
                     print(f'\t{headers[4]}: {initial[4]}\n')
                     print(f'\t{headers[5]}: {initial[5]}\n')
                     print(r"-------------------------------------------------------------------------------------------------------------------")
-
                 o = False
+                sys.exit()
+            
             elif from_user == 'n':
-                with open(os.path.join(os.path.pardir, f"Data\(SOL-Aus)IT_JOBS_REPORT.txt"),"w") as f:
-                    f.write(f'{files_csv[-1].split(".")[0]}: {len(processed_list)} IT occupations present in Skilled Occupation List of Australia:\n\n')
+                with open('{}'.format(files_csv[-1])) as ff:
+                    reader = csv.DictReader(ff, delimiter="#")
+                    initial_list_variable = []
+                    for i in reader:
+                        initial_list_variable.append(i)
+                initial_li = initial_list_variable
 
-                    for m in range(1, len(processed_list)):
-                        headers = processed_list[0]
-                        initial = processed_list[m]
+                #Below list will have just the data related to IT occupations
+                processed_list = []
 
-                        f.write(f'{str(m)}. [{initial[0]}]\n')
-                        f.write(f'\t{headers[1]}: {initial[1]}\n')
-
-                        #The element of the list 'initial' is also a list which python converted into string. So, using evaluation method of 'ast' library we can safely convert it into a list
-                        x = ast.literal_eval(initial[2]) 
-                        x = [n.strip() for n in x]
-                        #looping through and writing each element of the list 'x' into a new line
-                        for b in x:
-                            if b == x[0]:
-                                f.write(f'\t{headers[2]}:   {b}\n')
-                            else:
-                                f.write(f'\t\t{b}\n')
-
-                        f.write(f'\t{headers[3]}: {initial[3]}\n')
-                        f.write(f'\t{headers[4]}: {initial[4]}\n')
-                        f.write(f'\t{headers[5]}: {initial[5]}\n')
-                        f.write(r"------------------------------------------------------------------------------------------------------------")
-                        f.write("\n")
-                
-                
-                os.chdir(os.path.join(os.path.pardir, "Data"))
-                print("\nDone!!\nGo to '{}' and open '(SOL-Aus)IT_JOBS_REPORT.txt'.\n\n".format(os.getcwd()))
-                os.chdir(os.path.join(os.path.pardir, "Scripts"))
-                
+                #Now we loop through the elements of "initial_li" list and filter the information we need using regex
+                for i in initial_li:
+                    keywords = [r"ICT.*", r"[Cc]omputer.*", r"[Cc]ommunication.*", r"Software.*", r"Web.*", r"Programmer.*", r"Network.*", r"Database.*", r"261112", r"135111", r"262113", r"263211", r"263212", r"263213", r"263299", r"313111", r"313112", r"313113", r"313199", r"313211", r"313212", r"313213", r"313214", r"261313", r"261312", r"261211", r"263111"]
+                    for bb in keywords:
+                        if re.search(bb, str(i)) and i not in processed_list:
+                            processed_list.append(i)
+                os.chdir("../../Scripts")
                 o = False
+                return processed_list  
             else:
                 print("--Please provide a valid input: 'y' or 'n'--")
 
     def StopBot(self):
         self.driver.quit()
 
+# if __name__ == '__main__':
+#     first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
+#     first.Report_Generator( in_dict=first.IT_Jobs_Only())
+#     # first.Store_SOL()
+#     # first.StopBot()
+
 if __name__ == '__main__':
-    # first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
-    # first.StartBot()
-    # first.Store_SOL()
-    # first.StopBot()
+
     try:
         usr_in = sys.argv[1].lower()
     except:
@@ -646,7 +1069,7 @@ if __name__ == '__main__':
                 webpage_object = requests.get(main_link, timeout=3)
 
             except (requests.ConnectionError, requests.Timeout) as exception:
-                sys.exit("\nSorry. Cannot store data when offline. Please run this argument again when internet is available.")
+                sys.exit("\nSorry. Cannot store data when offline. Please give this argument again when internet is available.")
             else:
                 #Checking whether SOL of the current date is already stored in database
                 #If it already exists then it will skip the below block of code and only if it doesn't exist then it will run the function to store SOL of the current date
@@ -679,7 +1102,7 @@ if __name__ == '__main__':
 
         elif usr_in == 'reportit':
             print("\n-- TO GET THE LATEST INFORMATION IN THE REPORT, RUN 'aussol store' FIRST AND THEN THIS ARGUMENT")
-            first.IT_Jobs_Only()
+            first.Report_Generator( in_dict=first.IT_Jobs_Only())
             
         else:
             sys.exit("\nPlease enter one of following arguments after aussol.py with an space in between.\n  Enter command like this: aussol<space><argument>\n\t\tArguments: 1. 'store' for storing today's Skilled Occupation List\n\t\t           2. 'reportALL' for generating report of all occupations between two dates\n\t\t           3. 'reportIT' for  generating report of only IT occupations")
