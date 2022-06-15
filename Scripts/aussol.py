@@ -8,6 +8,7 @@ import re
 import sys
 import time
 
+from tqdm import tqdm
 import progressbar
 import requests
 from bs4 import BeautifulSoup
@@ -182,9 +183,9 @@ class BetaBot:
         indexing_list = re.findall(r"Showing\s(\d\d)\sout\sof\s(\d\d\d)\sitems\sthat\smatch\syour\scriteria", self.driver.page_source)[0] #driver.page_source will give the source code of the currently opened webpage
         no_of_cliks_to_perform = int(indexing_list[1])//int(indexing_list[0])
         
-        #Below 2 lines of codes are for initiating a loading status percentage bar
-        widgets = ['RETRIEVING DATA: ', progressbar.Bar('=', '[', ']', '-'), progressbar.Percentage()]
-        bar = progressbar.ProgressBar(max_value=no_of_cliks_to_perform+1,widgets=widgets,redirect_stdout=True).start() 
+        # #Below 2 lines of codes are for initiating a loading status percentage bar
+        # widgets = ['RETRIEVING DATA: ', progressbar.Bar('=', '[', ']', '-'), progressbar.Percentage()]
+        # bar = progressbar.ProgressBar(max_value=no_of_cliks_to_perform+1,widgets=widgets,redirect_stdout=True).start() 
 
 
         #For finding titles which will be stored as list in 'headings'
@@ -203,7 +204,7 @@ class BetaBot:
             writer.writerow(headings)
         
             #We have to click the 'Next' button by 'no_of_cliks_to_perform'
-            for i in range(0, no_of_cliks_to_perform+1):
+            for i in tqdm(range(0, no_of_cliks_to_perform+1), desc="RETRIEVING DATA: ", ascii=False, ncols=75):
                 #The rest of all the information we need is inside 'tbody' element
                 table_body = self.driver.find_element(by=By.ID, value='table-search').find_element(by=By.ID, value='table-to-label-0').find_element(by=By.TAG_NAME, value="table").find_element(by=By.TAG_NAME, value="tbody") #This is a selenium object
                 table_body = table_body.get_attribute('innerHTML') #Converting selenium object into html format
@@ -298,11 +299,8 @@ class BetaBot:
                         ActionChains(self.driver).click(el).perform()
                     except:
                         #If the 'try' block fails the we quit the chrome browser and exit the program with message
-                        bar.finish()
                         self.driver.quit()
                         sys.exit('\nWebsite took too long to load. Please run the script again!\n')
-                    else:
-                        bar.update(i+1)
 
                 elif i !=0 and i != no_of_cliks_to_perform: #if second page to the last page
                     try:
@@ -310,7 +308,6 @@ class BetaBot:
                         ActionChains(self.driver).click(el).perform()
                     except:
                         #If the 'try' block fails the we quit the chrome browser and exit the program with message
-                        bar.finish()
                         self.driver.quit()
                         sys.exit('\nWebsite took too long to load. Please run the script again!\n')
                     else:
@@ -327,21 +324,16 @@ class BetaBot:
                                 message = fgh['message'] #The above most recent log is a dictonary. Information we need is inside the key 'message' of this dict. So, storing the corresponding value of the key into a ariable
                                 if re.search(r'\"hide blockui spinner\.\.\.\"', message): #checking if the most recent log is the one we want & is so then breaking the loop
                                     break
-                        bar.update(i+1)
-
-            #Once the loop finishes, we tell our status bar that our objective is complete and satus bar shows 100%
-            bar.finish()
 
     def SOL_Report_Generator(self):
         '''This function generates a txt report using the previously stored datas in "Data\Records" directory'''
         os.chdir('../Data/Records')
         files = os.listdir()
 
-        print()
-        print("\n-- Database of Skilled Occupation List Australia available from {} to {} ---".format((files[0].split("."))[0], (files[-1].split("."))[0]))
-        print("-- NOTE: If the script doesn't find the exact match of the dates entered then, it will automatically provide report using the dates nearest to the ones entered in the database ---")
-        print("\nEnter dates between ({}) and ({}) in the format (YYYY-MM-DD) for manuallly giving the dates or,\nJust press ('Enter') key twice for using the oldest and the most recent date in the databse.".format(str((files[0].split("."))[0]), str((files[-1].split("."))[0])))
-        print()
+        print("-- Database of Skilled Occupation List Australia available from {} to {}".format((files[0].split("."))[0], (files[-1].split("."))[0]))
+        print("-- NOTE: If the script doesn't find the exact match of the dates entered then, it will automatically provide report using the dates nearest to the ones entered in the database")
+        print("\nEnter dates between ({}) and ({}) in the format (YYYY-MM-DD) for manuallly giving the dates or,\nJust press ('Enter') key twice for using the oldest and the most recent date in the databse.\n".format(str((files[0].split("."))[0]), str((files[-1].split("."))[0])))
+
         #Checking if input from user is a valid date in given format
         con = False
         while con == False:
@@ -559,14 +551,14 @@ class BetaBot:
         o = True
         while o == True:
             print()
-            from_user = input("Do you want to print the information here in the terminal or, create a report file?\nNOTE: Entering (y) will print the information here in the terminal and entering (n) will create a report file\n [y/n]: ").lower()
+            from_user = input("Do you want to print the information here in the terminal or, create a report file?\nNOTE: Entering (y) will print the information here in the terminal and entering (n) will create a report file.\n[y/n]: ").lower()
             if from_user == 'y':
+                print(f'{files_csv[-1].split(".")[0]}: {len(processed_list)} IT occupations present in Skilled Occupation List of Australia:\n\n')
                 for i in range(1, len(processed_list)):
                     print()
                     headers = processed_list[0]
                     initial = processed_list[i]
 
-                    print(f'({files_csv[-1].split(".")[0]}) IT occupations present in Skilled Occupation List of Australia:\n\n')
                     print(f'{str(i)}. [{initial[0]}]\n')
                     print(f'\t{headers[1]}: {initial[1]}\n')
 
@@ -583,16 +575,17 @@ class BetaBot:
                     print(f'\t{headers[3]}: {initial[3]}\n')
                     print(f'\t{headers[4]}: {initial[4]}\n')
                     print(f'\t{headers[5]}: {initial[5]}\n')
-                    print(r"-----------------------------------------------------------------------------------------------------------------")
+                    print(r"-------------------------------------------------------------------------------------------------------------------")
 
                 o = False
             elif from_user == 'n':
                 with open(os.path.join(os.path.pardir, f"Data\(SOL-Aus)IT_JOBS_REPORT.txt"),"w") as f:
+                    f.write(f'{files_csv[-1].split(".")[0]}: {len(processed_list)} IT occupations present in Skilled Occupation List of Australia:\n\n')
+
                     for m in range(1, len(processed_list)):
                         headers = processed_list[0]
                         initial = processed_list[m]
 
-                        f.write(f'({files_csv[-1].split(".")[0]}) IT occupations present in Skilled Occupation List of Australia:\n\n')
                         f.write(f'{str(m)}. [{initial[0]}]\n')
                         f.write(f'\t{headers[1]}: {initial[1]}\n')
 
@@ -629,57 +622,64 @@ if __name__ == '__main__':
     # first.StartBot()
     # first.Store_SOL()
     # first.StopBot()
-
-    usr_in = sys.argv[1].lower()
-    first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
-
-    print("\n-- SOME PART OF THIS SCRIPT REQUIRES INTERNET CONNECTION.")
-
-    if usr_in == 'help':
-        print("\n-- GO TO THE DIRECTORY OF 'aussol.py' AND RUN COMMANDS ACCORDING TO YOUR NEED")
+    try:
+        usr_in = sys.argv[1].lower()
+    except:
+        print("\n-- AN ARGUMENT NEEDS TO BE GIVEN AFTER 'aussol.py' WITH A SPACE IN BETWEEN!")
         print("\n1.(REQUIRES INTERNET) TO STORE TODAY'S SKILLED OCCUPATION LIST OF AUSTRALIA IN THE DATABASE:\n\t[RUN: aussol.py<space>store]")
         print("\n\n2.GENERATE A REPORT OF ALL OCCUPATION IN SKKILLED OCCUPATION LIST OF AUSTRALIA:\n\tA. (REQUIRES INTERNET) TO MAKE A REPORT OF LATEST INFORMATION:\n\t\t[RUN FIRST: aussol.py<space>store]\n\t\t[RUN SECOND: aussol<space>reportALL]\n\n\tB. (INTERNET NOT REQUIRED) TO MAKE REPORT FROM THE SCRIPT'S DATABASE:\n\t\t[RUN: aussol<space>reportALL]")
         print("\n\n2.GENERATE A REPORT OF ONLY IT OCCUPATION IN SKKILLED OCCUPATION LIST OF AUSTRALIA:\n\tA. (REQUIRES INTERNET) TO MAKE A REPORT OF LATEST INFORMATION:\n\t\t[RUN FIRST: aussol.py<space>store]\n\t\t[RUN SECOND: aussol<space>reportIT]\n\n\tB. (INTERNET NOT REQUIRED) TO MAKE REPORT FROM THE MOST RECENT RECORD IN SCRIPT'S DATABASE:\n\t\t[RUN: aussol<space>reportIT]\n")
-
-    elif usr_in == 'store':
-        try:
-            #Below two codes for checking internet connection
-            main_link = "https://www.google.com"
-            webpage_object = requests.get(main_link, timeout=3)
-
-        except (requests.ConnectionError, requests.Timeout) as exception:
-            sys.exit("\nCannot store data when offline. Please run this argument again when internet is available.")
-        else:
-            #Checking whether SOL of the current date is already stored in database
-            #If it already exists then it will skip the below block of code and only if it doesn't exist then it will run the function to store SOL of the current date
-            os.chdir(os.path.join(os.path.pardir, r"Data\Records"))
-            if not os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
-                try:
-                    #print("\n---------------------------------------------------------------------------------------------------------------------------")
-                    print("-- THIS PROCESS USUALLY TAKES AROUND 2 TO 3 MINUTES. PLEASE DO NOT EXIT WHILE THE SCRIPT GATHERS NECESSARY LATEST DATAS\n") 
-                    os.chdir('../../Scripts')  
-                    first.StartBot()
-                    first.Store_SOL()
-                    
-                    print(f"\n{datetime.datetime.today().strftime('%Y-%m-%d')} copy of Skilled Occupation List Australia is now stored and, can be used to generate report.")
-                    print("---------------------------------------------------------------------------------------------------------------------------\n")
-                except:
-                    if os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
-                        current_date = datetime.datetime.today().strftime('%Y-%m-%d')
-                        os.remove(f'{current_date}.csv')    
-                        sys.exit('\nSorry. Some error occured during the retrieval process.')
-                    else:
-                        sys.exit('\nSorry. Some error occured during the retrieval process.')
-                
-            else:
-                print("\n++Today's Skilled Occupation List already stored++\n")
-                os.chdir('../../Scripts')  
-
-    elif usr_in == 'reportall':
-        first.SOL_Report_Generator()
-
-    elif usr_in == 'reportit':
-        first.IT_Jobs_Only()
-        
     else:
-        sys.exit("\nPlease enter one of following arguments after aussol.py with an space in between.\n  Enter command like this: aussol<space><argument>\n\t\targuments: 1. 'store' for storing today's Skilled Occupation List\n\t\t           2. 'reportALL' for generating report of all occupations between two dates\n\t\t           3. 'reportIT' for  generating report of only IT occupations")
+        first = BetaBot(url="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list")
+        if usr_in == 'help':
+            print("\n-- SOME PART OF THIS SCRIPT REQUIRES INTERNET CONNECTION.")
+            print("\n-- GO TO THE DIRECTORY OF 'aussol.py' AND RUN COMMANDS ACCORDING TO YOUR NEED")
+            print("\n1.(REQUIRES INTERNET) TO STORE TODAY'S SKILLED OCCUPATION LIST OF AUSTRALIA IN THE DATABASE:\n\t[RUN: aussol.py<space>store]")
+            print("\n\n2.GENERATE A REPORT OF ALL OCCUPATION IN SKKILLED OCCUPATION LIST OF AUSTRALIA:\n\tA. (REQUIRES INTERNET) TO MAKE A REPORT OF LATEST INFORMATION:\n\t\t[RUN FIRST: aussol.py<space>store]\n\t\t[RUN SECOND: aussol<space>reportALL]\n\n\tB. (INTERNET NOT REQUIRED) TO MAKE REPORT FROM THE SCRIPT'S DATABASE:\n\t\t[RUN: aussol<space>reportALL]")
+            print("\n\n2.GENERATE A REPORT OF ONLY IT OCCUPATION IN SKKILLED OCCUPATION LIST OF AUSTRALIA:\n\tA. (REQUIRES INTERNET) TO MAKE A REPORT OF LATEST INFORMATION:\n\t\t[RUN FIRST: aussol.py<space>store]\n\t\t[RUN SECOND: aussol<space>reportIT]\n\n\tB. (INTERNET NOT REQUIRED) TO MAKE REPORT FROM THE MOST RECENT RECORD IN SCRIPT'S DATABASE:\n\t\t[RUN: aussol<space>reportIT]\n")
+
+        elif usr_in == 'store':
+            try:
+                print("\n-- SOME PART OF THIS SCRIPT REQUIRES INTERNET CONNECTION.")
+                #Below two codes for checking internet connection
+                main_link = "https://www.google.com"
+                webpage_object = requests.get(main_link, timeout=3)
+
+            except (requests.ConnectionError, requests.Timeout) as exception:
+                sys.exit("\nSorry. Cannot store data when offline. Please run this argument again when internet is available.")
+            else:
+                #Checking whether SOL of the current date is already stored in database
+                #If it already exists then it will skip the below block of code and only if it doesn't exist then it will run the function to store SOL of the current date
+                os.chdir(os.path.join(os.path.pardir, r"Data\Records"))
+                if not os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
+                    try:
+                        #print("\n---------------------------------------------------------------------------------------------------------------------------")
+                        print("-- THIS PROCESS USUALLY TAKES AROUND 2 TO 3 MINUTES. PLEASE DO NOT EXIT WHILE THE SCRIPT GATHERS NECESSARY LATEST DATAS\n") 
+                        os.chdir('../../Scripts')  
+                        first.StartBot()
+                        first.Store_SOL()
+                        
+                        print(f"\n{datetime.datetime.today().strftime('%Y-%m-%d')} copy of Skilled Occupation List Australia is now stored and, can be used to generate report.")
+                        print("---------------------------------------------------------------------------------------------------------------------------\n")
+                    except:
+                        if os.path.isfile(f"{datetime.datetime.today().strftime('%Y-%m-%d')}.csv"): 
+                            current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+                            os.remove(f'{current_date}.csv')    
+                            sys.exit('\nSorry. Some error occured during the retrieval process.')
+                        else:
+                            sys.exit('\nSorry. Some error occured during the retrieval process.')
+                    
+                else:
+                    print("\n++Today's Skilled Occupation List already stored++\n")
+                    os.chdir('../../Scripts')  
+
+        elif usr_in == 'reportall':
+            print("\n-- TO GET THE LATEST INFORMATION IN THE REPORT, RUN 'aussol store' FIRST AND THEN THIS ARGUMENT")
+            first.SOL_Report_Generator()
+
+        elif usr_in == 'reportit':
+            print("\n-- TO GET THE LATEST INFORMATION IN THE REPORT, RUN 'aussol store' FIRST AND THEN THIS ARGUMENT")
+            first.IT_Jobs_Only()
+            
+        else:
+            sys.exit("\nPlease enter one of following arguments after aussol.py with an space in between.\n  Enter command like this: aussol<space><argument>\n\t\tArguments: 1. 'store' for storing today's Skilled Occupation List\n\t\t           2. 'reportALL' for generating report of all occupations between two dates\n\t\t           3. 'reportIT' for  generating report of only IT occupations")
