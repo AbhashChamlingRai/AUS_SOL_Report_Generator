@@ -32,7 +32,7 @@ After running above command the script automatically stores latest Skilled Occup
 > ***$ aussol.py reportALL***
 
 &nbsp;&nbsp;&nbsp;&nbsp;
-Running the above command will generate an Skilled Occupation List report of all occupations between two desired dates from script's database.
+Running the above command will generate an Skilled Occupation List report of all occupations between two desired dates from script's database as a pdf report file.
 
 &nbsp;&nbsp;&nbsp;&nbsp;
 If in case, the script's database does not have Skilled Occupation List of the entered dates then, it will automatically choose dates nearest to it in its database to generate a report file.
@@ -41,9 +41,9 @@ If in case, the script's database does not have Skilled Occupation List of the e
 Depending on the information stored in the entered date's Skilled Occupation List entry, the script will create a report file which could include any of the following details:\
 <font size = "2">
 * No changes with all the current occupation present in the latest Skilled Occupation List.
-* Added occupations with its total number and all the current occupation present in the latest Skilled Occupation List.
-* Removed occupations with its total number and all the current occupations present in the latest Skilled Occupation List.
-* Both added as well as removed occupations with its total number and all the current occupations present in the latest Skilled Occupation List.
+* Added occupations with its total number and other remaining occupations present in the latest entry of Skilled Occupation List in the databse.
+* Removed occupations with its total number and other remaining occupations present in the latest entry of Skilled Occupation List in the databse.
+* Both added as well as removed occupations with its total number and other remaining occupations present in the latest entry of Skilled Occupation List in the databse.
 </font>
 
 #### 3. ***(INTERNET NOT REQUIRED)*** To generate latest Skilled Occupation List report (IT related occupations only) from the script's database:
@@ -51,7 +51,7 @@ Depending on the information stored in the entered date's Skilled Occupation Lis
 > ***$ aussol.py reportIT***
 		
 &nbsp;&nbsp;&nbsp;&nbsp;
-Running the above command will generate IT occupations report from Skilled Occupation List of Australia and the script will ask whether user wants to recieve the report on the terminal or as a report file
+Running the above command will generate IT occupations report from Skilled Occupation List of Australia and the script will ask whether user wants to recieve the report on the terminal or as a pdf report file.
 
 
 ### This script has two modes:
